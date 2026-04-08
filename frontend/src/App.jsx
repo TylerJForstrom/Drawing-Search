@@ -16,9 +16,47 @@ function ScoreBadge({ score }) {
   )
 }
 
-function ResultCard({ result }) {
+function PreviewPanel({ selectedResult }) {
+  if (!selectedResult) {
+    return (
+      <div className="preview-panel empty-preview">
+        <h3>Preview</h3>
+        <p>Select a result to preview the PDF here.</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="result-card">
+    <div className="preview-panel">
+      <div className="preview-header">
+        <div>
+          <h3>{selectedResult.file}</h3>
+          <p>Page {selectedResult.page}</p>
+        </div>
+        <a
+          className="secondary-btn"
+          href={selectedResult.page_url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open in New Tab
+        </a>
+      </div>
+
+      <div className="preview-frame-wrap">
+        <iframe
+          title="PDF Preview"
+          src={selectedResult.page_url}
+          className="preview-frame"
+        />
+      </div>
+    </div>
+  )
+}
+
+function ResultCard({ result, isSelected, onSelect }) {
+  return (
+    <div className={`result-card ${isSelected ? 'selected-card' : ''}`}>
       <div className="result-top">
         <div>
           <div className="result-file">{result.file}</div>
@@ -40,6 +78,20 @@ function ResultCard({ result }) {
       )}
 
       <p className="preview">{result.text_preview}</p>
+
+      <div className="result-actions">
+        <button className="primary-btn small-btn" onClick={() => onSelect(result)}>
+          Preview Page
+        </button>
+        <a
+          className="secondary-btn"
+          href={result.page_url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open PDF
+        </a>
+      </div>
     </div>
   )
 }
@@ -52,6 +104,7 @@ export default function App() {
   const [uploading, setUploading] = useState(false)
   const [searching, setSearching] = useState(false)
   const [searchMeta, setSearchMeta] = useState(null)
+  const [selectedResult, setSelectedResult] = useState(null)
 
   const canSearch = useMemo(() => query.trim().length > 0, [query])
 
@@ -88,14 +141,17 @@ export default function App() {
         query,
         top_k: 8
       })
-      setResults(res.data.results || [])
+      const found = res.data.results || []
+      setResults(found)
       setSearchMeta({
         query: res.data.query,
         count: res.data.count
       })
+      setSelectedResult(found.length > 0 ? found[0] : null)
     } catch (err) {
       setResults([])
       setSearchMeta(null)
+      setSelectedResult(null)
       setMessage(err.response?.data?.detail || 'Search failed')
     } finally {
       setSearching(false)
@@ -105,11 +161,11 @@ export default function App() {
   return (
     <div className="page-shell">
       <div className="hero">
-        <div className="hero-badge">Kahua Project • V2</div>
+        <div className="hero-badge">Kahua Project • V3</div>
         <h1>Drawing Search</h1>
         <p>
-          Search construction PDFs by meaning instead of file name. Upload documents,
-          index them, and retrieve the most relevant pages fast.
+          Search construction PDFs by meaning, inspect the best match, and jump
+          straight to the relevant page.
         </p>
       </div>
 
@@ -169,10 +225,23 @@ export default function App() {
         </div>
       )}
 
-      <div className="results-list">
-        {results.map((result, index) => (
-          <ResultCard result={result} key={`${result.file}-${result.page}-${index}`} />
-        ))}
+      <div className="v3-layout">
+        <div className="results-list">
+          {results.map((result, index) => (
+            <ResultCard
+              result={result}
+              key={`${result.file}-${result.page}-${index}`}
+              isSelected={
+                selectedResult &&
+                selectedResult.file === result.file &&
+                selectedResult.page === result.page
+              }
+              onSelect={setSelectedResult}
+            />
+          ))}
+        </div>
+
+        <PreviewPanel selectedResult={selectedResult} />
       </div>
 
       {!searching && results.length === 0 && searchMeta && (

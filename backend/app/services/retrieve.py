@@ -1,6 +1,7 @@
 import json
 import re
 from pathlib import Path
+from urllib.parse import quote
 
 import faiss
 import numpy as np
@@ -92,12 +93,10 @@ def text_preview_with_match(text: str, terms: list[str], preview_len: int = 320)
     lower = clean.lower()
 
     hit_index = -1
-    hit_term = None
     for term in terms:
         idx = lower.find(term)
         if idx != -1:
             hit_index = idx
-            hit_term = term
             break
 
     if hit_index == -1:
@@ -113,6 +112,13 @@ def text_preview_with_match(text: str, terms: list[str], preview_len: int = 320)
         snippet = snippet + "..."
 
     return snippet
+
+
+def build_file_urls(filename: str, page: int):
+    safe_name = quote(filename)
+    base_url = f"http://127.0.0.1:8000/files/{safe_name}"
+    page_url = f"{base_url}#page={page}"
+    return base_url, page_url
 
 
 def search_documents(query: str, top_k: int = 8):
@@ -137,6 +143,7 @@ def search_documents(query: str, top_k: int = 8):
         semantic_score = 1.0 / (1.0 + float(dist))
         k_score, matched_terms = keyword_score(item["text"], terms)
         final_score = semantic_score * 0.75 + k_score * 0.25
+        file_url, page_url = build_file_urls(item["source"], item["page"])
 
         rescored.append(
             {
@@ -152,6 +159,8 @@ def search_documents(query: str, top_k: int = 8):
                     if matched_terms
                     else "Semantic similarity"
                 ),
+                "file_url": file_url,
+                "page_url": page_url,
             }
         )
 
