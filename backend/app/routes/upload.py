@@ -31,4 +31,5 @@ async def upload_pdf(file: UploadFile = File(...)):
         "message": "Upload successful",
         "file": file.filename,
         "pages_indexed": count,
+        "pages_found": len(pages),
     }
