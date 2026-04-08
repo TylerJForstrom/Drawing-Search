@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+
+# Node
+node_modules/
+dist/
+
+# Env
+.env
+
+# Mac
+.DS_Store
+
+# Data (VERY IMPORTANT - don't push embeddings/index)
+backend/data/
+
+# Logs
+*.log
